@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import { useState, useEffect } from 'react';
-import { FlatList, StyleSheet, Text, TextInput, View, Button, Alert } from 'react-native';
+import { FlatList, StyleSheet, Text, TextInput, View, Button, Alert, KeyboardAvoidingView, Platform, Modal, TouchableOpacity } from 'react-native';
 
 const productosIniciales = [
   { nombre: 'Doritos', categoria: 'Snacks', precioCompra: 0.40, precioVenta: 0.45, id: 100 },
@@ -20,6 +20,8 @@ export default function App() {
   const [txtPrecioVenta, setTxtPrecioVenta] = useState('');
   const [cantidadProductos, setCantidadProductos] = useState(productosIniciales.length);
   const [listaProductos, setListaProductos] = useState(productosIniciales);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [idProductoEliminar, setIdProductoEliminar] = useState(null);
 
   useEffect(() => {
     if (txtPrecioCompra !== '') {
@@ -48,9 +50,7 @@ export default function App() {
         </View>
 
         <View style={styles.action}>
-          <Button
-            color='aliceblue'
-            title='✍🏼'
+          <TouchableOpacity
             onPress={() => {
               setTxtCodigo(props.producto.id.toString());
               setTxtNombre(props.producto.nombre);
@@ -60,14 +60,17 @@ export default function App() {
               esNuevo = false;
               codigoProduct = listaProductos.findIndex(p => p.id === props.producto.id);
             }}
-          />
-          <Button
-            color='aliceblue'
-            title='🚮'
+          >
+            <Text>✍🏼</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             onPress={() => {
-              eliminarProducto(props.producto.id);
+              setIdProductoEliminar(props.producto.id);
+              setModalVisible(true);
             }}
-          />
+          >
+            <Text>🚮</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -93,7 +96,7 @@ export default function App() {
 
   const validarCampos = () => {
     if (!txtCodigo || !txtNombre || !txtCategoria || !txtPrecioCompra || !txtPrecioVenta) {
-      Alert.alert("INFO", "Todos los campos son obligatorios.");
+      Alert.alert("ERROR", "Debe llenar todos los campos.");
       return false;
     }
     return true;
@@ -105,7 +108,7 @@ export default function App() {
     let precioVenta = parseFloat(txtPrecioVenta);
     if(esNuevo) {
       if(existeProducto()) {
-        Alert.alert("INFO", "El producto don codigo" + txtCodigo + " ya fue registrado.")
+        Alert.alert("INFO", "El producto con codigo " + txtCodigo + " ya fue registrado.")
       } else {
         let product = { nombre: txtNombre, categoria: txtCategoria, precioCompra: parseFloat(txtPrecioCompra), precioVenta: precioVenta, id: parseInt(txtCodigo) }
         setListaProductos([...listaProductos, product]);
@@ -123,82 +126,117 @@ export default function App() {
     const nuevosProductos = listaProductos.filter(producto => producto.id !== id);
     setListaProductos(nuevosProductos);
     setCantidadProductos(nuevosProductos.length);
+    setModalVisible(false);
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.title}>
-        <Text style={styles.product}>Productos</Text>
-      </View>
-
-      <View style={styles.form}>
-        <TextInput
-          style={styles.input}
-          value={txtCodigo}
-          placeholder='Codigo'
-          onChangeText={setTxtCodigo}
-          keyboardType='numeric'
-          editable={esNuevo}
-        />
-        <TextInput
-          style={styles.input}
-          value={txtNombre}
-          placeholder='Nombre'
-          onChangeText={setTxtNombre}
-        />
-        <TextInput
-          style={styles.input}
-          value={txtCategoria}
-          placeholder='Categoria'
-          onChangeText={setTxtCategoria}
-        />
-        <TextInput
-          style={styles.input}
-          value={txtPrecioCompra}
-          placeholder='Precio de compra'
-          onChangeText={setTxtPrecioCompra}
-          keyboardType='numeric'
-        />
-        <TextInput
-          style={styles.input}
-          value={txtPrecioVenta}
-          placeholder='Precio de venta'
-          editable={false}
-        />
-        <View style={styles.botones}>
-          <Button
-            title='Nuevo'
-            onPress={() => {
-              nuevoProduct();
-            }}
-          />
-          <Button
-            title='Guardar'
-            onPress={() => {
-              guardarProducto();
-            }}
-            buttonStyle={styles.btn}
-          />
-          <Text>Productos: { cantidadProductos }</Text>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <View style={styles.container}>
+        <View style={styles.title}>
+          <Text style={styles.product}>Productos</Text>
         </View>
+
+        <View style={styles.form}>
+          <TextInput
+            style={styles.input}
+            value={txtCodigo}
+            placeholder='Codigo'
+            onChangeText={setTxtCodigo}
+            keyboardType='numeric'
+            editable={esNuevo}
+          />
+          <TextInput
+            style={styles.input}
+            value={txtNombre}
+            placeholder='Nombre'
+            onChangeText={setTxtNombre}
+          />
+          <TextInput
+            style={styles.input}
+            value={txtCategoria}
+            placeholder='Categoria'
+            onChangeText={setTxtCategoria}
+          />
+          <TextInput
+            style={styles.input}
+            value={txtPrecioCompra}
+            placeholder='Precio de compra'
+            onChangeText={setTxtPrecioCompra}
+            keyboardType='numeric'
+          />
+          <TextInput
+            style={styles.input}
+            value={txtPrecioVenta}
+            placeholder='Precio de venta'
+            editable={false}
+          />
+          <View style={styles.botones}>
+            <Button
+              title='Nuevo'
+              onPress={() => {
+                nuevoProduct();
+              }}
+            />
+            <Button
+              title='Guardar'
+              onPress={() => {
+                guardarProducto();
+              }}
+              buttonStyle={styles.btn}
+            />
+            <Text>Productos: { cantidadProductos }</Text>
+          </View>
+        </View>
+
+        <View style={styles.list}>
+          <FlatList
+            data={listaProductos}
+            renderItem={(obj) => {
+              return <ItemProducto identificador={obj.item.id} producto={obj.item}/>
+            }}
+            keyExtractor={(item) => {
+              return item.id.toString();
+            }}
+          />
+        </View>
+        <View style={styles.footer}>
+            <Text>&copy; 2024 Hector Ajumado. Todos los derechos reservados.</Text>
+        </View>
+        <StatusBar style="auto" />
       </View>
 
-      <View style={styles.list}>
-        <FlatList
-          data={listaProductos}
-          renderItem={(obj) => {
-            return <ItemProducto identificador={obj.item.id} producto={obj.item}/>
-          }}
-          keyExtractor={(item) => {
-            return item.id.toString();
-          }}
-        />
-      </View>
-      <View style={styles.footer}>
-          <Text>&copy; 2024 Hector Ajumado. Todos los derechos reservados.</Text>
-      </View>
-      <StatusBar style="auto" />
-    </View>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => {
+          setModalVisible(!modalVisible);
+        }}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalView}>
+            <Text style={styles.modalText}>¿Está seguro que decea eliminar este producto?</Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.btnCancelar, styles.btn]}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={styles.btnText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.btnEliminar, styles.btn]}
+                onPress={() => eliminarProducto(idProductoEliminar)}
+              >
+                <Text style={styles.btnText}>Eliminar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -210,8 +248,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15
   },
   btn: {
-    backgroundColor:'red',
-    width: 100
+    justifyContent: 'center',
+    alignItems:'center',
+    width: 90,
+    borderRadius: 3,
+    paddingVertical: 8
   },
   title: {
     flex: 1.3,
@@ -280,14 +321,59 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around'
   },
   datos: {
-    fontSize:15
+    fontSize: 15
   },
   price: {
-    fontWeight: 'bold'
+    fontWeight: 'bold',
+    fontSize: 14
   },
   footer: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  modalContainer: {
+    flex: 1,
+    //backgroundColor: 'green',
+    justifyContent: 'center',
     alignItems: 'center',
-    justifyContent: 'center'
+  },
+  modalView: {
+    width: '92%',
+    backgroundColor: 'white',
+    borderRadius: 3,
+    padding: 25,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 9
+  },
+  modalText: {
+    marginBottom: 15,
+    textAlign: 'center',
+    fontSize: 15
+  },
+  modalButtons: {
+    //backgroundColor: 'red',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '90%'
+  },
+  btnCancelar: {
+    backgroundColor: 'darkorange',  
+  },
+  btnEliminar: {
+    backgroundColor: 'orangered'
+  },
+  btnText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 15
   }
+
 });
